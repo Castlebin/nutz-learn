@@ -115,6 +115,11 @@ public class UserModule {
         return qr;
     }
 
+    @At("/")
+    @Ok("jsp:jsp.user.list") // 真实路径是 /WEB-INF/jsp/user/list.jsp
+    public void index() {
+    }
+
     /**
      * 对user进行校验
      */
