@@ -1,18 +1,20 @@
 package com.heller.nutzbook;
 
 import com.heller.nutzbook.bean.User;
+import com.heller.nutzbook.service.UserService;
 import org.apache.commons.mail.HtmlEmail;
 import org.nutz.dao.Dao;
 import org.nutz.dao.util.Daos;
 import org.nutz.integration.quartz.NutQuartzCronJobFactory;
+import org.nutz.integration.shiro.ShiroSessionProvider;
 import org.nutz.ioc.Ioc;
 import org.nutz.log.Log;
 import org.nutz.log.Logs;
 import org.nutz.mvc.NutConfig;
 import org.nutz.mvc.Setup;
+import org.nutz.mvc.annotation.SessionBy;
 
-import java.util.Date;
-
+@SessionBy(ShiroSessionProvider.class) // 使用Shiro的Session替换NutFilter作用域内的Session
 public class MainSetup implements Setup {
 
     private static final Log log = Logs.get();
@@ -27,14 +29,8 @@ public class MainSetup implements Setup {
 
         // 初始化，新建默认的根用户
         if (dao.count(User.class) == 0) {
-            User user = new User();
-            user.setName("admin");
-            user.setPassword("123456");
-            Date now = new Date();
-            user.setCreateTime(now);
-            user.setUpdateTime(now);
-
-            dao.insert(user);
+            UserService us = ioc.get(UserService.class);
+            us.add("admin", "123456");
         }
 
         // 因为NutIoc中的Bean是完全懒加载模式的,不获取就不生成,不初始化,所以,为了触发计划任务的加载

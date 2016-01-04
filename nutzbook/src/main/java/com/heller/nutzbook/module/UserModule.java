@@ -2,12 +2,14 @@ package com.heller.nutzbook.module;
 
 import com.heller.nutzbook.bean.User;
 import com.heller.nutzbook.bean.UserProfile;
+import com.heller.nutzbook.service.UserService;
 import com.heller.nutzbook.util.Toolkit;
 import org.nutz.aop.interceptor.ioc.TransAop;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.QueryResult;
 import org.nutz.dao.pager.Pager;
 import org.nutz.ioc.aop.Aop;
+import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Strings;
 import org.nutz.lang.util.NutMap;
@@ -16,14 +18,16 @@ import org.nutz.mvc.annotation.*;
 import org.nutz.mvc.filter.CheckSession;
 
 import javax.servlet.http.HttpSession;
-import java.util.Date;
 
 @Filters(@By(type = CheckSession.class, args = {"me", "/"})) // 如果session中没有me这个属性，就跳转到/
 @IocBean
-@At("user")
+@At("/user")
 @Ok("json:{locked:'password|salt', ignoreNull:true}") // 密码和salt也不可以发送到浏览器去
 @Fail("http:500")
 public class UserModule extends BaseModule {
+
+    @Inject
+    protected UserService userService;
 
     @At
     public int count() {
@@ -32,7 +36,7 @@ public class UserModule extends BaseModule {
 
     @Filters //为login方法设置为空的过滤器，否则无法登录（类上有一个CheckSession的过滤器）
     @At
-    public Object login(@Param("username") String name,
+    public Object login(@Param("username") String username,
                         @Param("password") String password,
                         @Param("captcha") String captcha,
                         @Attr(scope=Scope.SESSION, value="nutz_captcha") String _captcha,
@@ -41,11 +45,11 @@ public class UserModule extends BaseModule {
         if (!Toolkit.checkCaptcha(_captcha, captcha)) {
             return re.setv("ok", false).setv("msg", "验证码错误");
         }
-        User user = dao.fetch(User.class, Cnd.where("name", "=", name).and("password", "=", password));
-        if (user == null) {
+        int userId = userService.fetch(username, password);
+        if (userId < 0) {
             return re.setv("ok", false).setv("msg", "用户名或密码错误");
         } else {
-            session.setAttribute("me", user.getId());
+            session.setAttribute("me", userId);
             return re.setv("ok", true);
         }
     }
@@ -61,44 +65,38 @@ public class UserModule extends BaseModule {
      * eg: http://127.0.0.1:8080/nutzbook/user/add?name=wendal&password=123456
      */
     @At
-    public Object add(@Param("..") User user) {
+    public Object add(@Param("..")User user) { // 两个点号是按对象属性一一设置
         NutMap re = new NutMap();
         String msg = checkUser(user, true);
-        if (msg != null) {
-            return re.setv("ok", false)
-                    .setv("msg", msg);
+        if (msg != null){
+            return re.setv("ok", false).setv("msg", msg);
         }
-
-        Date now = new Date();
-        user.setCreateTime(now);
-        user.setUpdateTime(now);
-
-        user = dao.insert(user);
+        user = userService.add(user.getName(), user.getPassword());
 
         return re.setv("ok", true)
-                .setv("data", user);
+                 .setv("data", user);
     }
 
     @At
-    public Object update(@Param("..") User user) {
-        NutMap re = new NutMap();
-        String msg = checkUser(user, false);
-        if (msg != null) {
-            return re.setv("ok", false)
-                    .setv("msg", msg);
+    public Object update(@Param("id") int id,
+                         @Param("password")String password,
+                         @Attr("me")int me) {
+        if (id != me && me != 1) {// id=1 is admin
+            return new NutMap().setv("ok", false).setv("msg", "你没有权限修改其他人的密码");
         }
-        user.setName(null); // 不允许更新用户名
-        user.setCreateTime(null); // 也不允许更新创建时间
-        user.setUpdateTime(new Date());
+        if (Strings.isBlank(password) || password.length() < 6) {
+            return new NutMap().setv("ok", false).setv("msg", "密码不符合要求");
+        }
 
-        dao.updateIgnoreNull(user); // ignoreNull，为null的字段均不去更新
+        userService.updatePassword(id, password);
 
-        return re.setv("ok", true);
+        return new NutMap().setv("ok", true);
     }
 
     @At
     @Aop(TransAop.READ_COMMITTED)
-    public Object delete(@Param("id") int id, @Attr("me") int me) {
+    public Object delete(@Param("id") int id,
+                         @Attr("me") int me) {
         if (me == id) {
             return new NutMap().setv("ok", false)
                     .setv("msg", "不能删除当前用户！");
@@ -116,7 +114,8 @@ public class UserModule extends BaseModule {
      * eg: http://127.0.0.1:8080/nutzbook/user/query?pageNumber=1&pageSize=2
      */
     @At
-    public Object query(@Param("name") String name, @Param("..") Pager pager) {
+    public Object query(@Param("name") String name,
+                        @Param("..") Pager pager) {
         Cnd cnd = Strings.isBlank(name)? null : Cnd.where("name", "like", "%"+name+"%");
         QueryResult qr = new QueryResult();
         qr.setList(dao.query(User.class, cnd, pager));

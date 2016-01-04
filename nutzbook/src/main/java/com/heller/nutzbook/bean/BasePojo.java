@@ -12,8 +12,9 @@ import java.util.Date;
 @Setter
 public abstract class BasePojo {
 
-    @Column("create_time")
+    @Column("create_time")// 类中有一个属性加了@Column注解，必须所有的字段都加（加了@Id、@Name的可以不加）
     private Date createTime;
+
     @Column("update_time")
     private Date updateTime;
 
