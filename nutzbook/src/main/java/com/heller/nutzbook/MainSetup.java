@@ -37,7 +37,8 @@ public class MainSetup implements Setup {
             dao.insert(user);
         }
 
-        // 获取NutQuartzCronJobFactory, 从而触发计划任务的初始化与启动
+        // 因为NutIoc中的Bean是完全懒加载模式的,不获取就不生成,不初始化,所以,为了触发计划任务的加载
+        // 获取NutQuartzCronJobFactory从而触发计划任务的初始化与启动
         ioc.get(NutQuartzCronJobFactory.class);
 
         // 测试发送邮件
