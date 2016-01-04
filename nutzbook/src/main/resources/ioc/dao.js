@@ -1,23 +1,29 @@
 var ioc = {
-    dataSource : {
-        type : "com.alibaba.druid.pool.DruidDataSource",
-        events : {
-            create : "init",
-            depose : "close"
-        },
-        fields : {
-            url : "jdbc:mysql://localhost:3306/nutzbook",
-            username : "nutz",
-            password : "nutz",
-            testWhileIdle : true,
-            validationQuery : "select 1",
-            maxActive : 100
+    conf: {
+        type: "org.nutz.ioc.impl.PropertiesProxy",
+        fields: {
+            paths: ["custom/db.properties"]
         }
     },
-    dao : {
-        type : "org.nutz.dao.impl.NutDao",
-        args : [
-            {refer : "dataSource"}
+    dataSource: {
+        type: "com.alibaba.druid.pool.DruidDataSource",
+        events: {
+            create: "init",
+            depose: "close"
+        },
+        fields: {
+            url: {java: "$conf.get('db.url')"},
+            username: {java: "$conf.get('db.username')"},
+            password: {java: "$conf.get('db.password')"},
+            testWhileIdle: true,
+            validationQuery: {java: "$conf.get('db.validationQuery')"},
+            maxActive: {java: "$conf.get('db.maxActive')"}
+        }
+    },
+    dao: {
+        type: "org.nutz.dao.impl.NutDao",
+        args: [
+            {refer: "dataSource"}
         ]
     }
 };
