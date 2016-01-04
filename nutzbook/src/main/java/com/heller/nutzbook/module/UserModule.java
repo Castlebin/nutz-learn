@@ -2,6 +2,7 @@ package com.heller.nutzbook.module;
 
 import com.heller.nutzbook.bean.User;
 import com.heller.nutzbook.bean.UserProfile;
+import com.heller.nutzbook.util.Toolkit;
 import org.nutz.aop.interceptor.ioc.TransAop;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.QueryResult;
@@ -10,6 +11,7 @@ import org.nutz.ioc.aop.Aop;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Strings;
 import org.nutz.lang.util.NutMap;
+import org.nutz.mvc.Scope;
 import org.nutz.mvc.annotation.*;
 import org.nutz.mvc.filter.CheckSession;
 
@@ -30,13 +32,21 @@ public class UserModule extends BaseModule {
 
     @Filters //为login方法设置为空的过滤器，否则无法登录（类上有一个CheckSession的过滤器）
     @At
-    public Object login(@Param("username") String name, @Param("password") String password, HttpSession session) {
+    public Object login(@Param("username") String name,
+                        @Param("password") String password,
+                        @Param("captcha") String captcha,
+                        @Attr(scope=Scope.SESSION, value="nutz_captcha") String _captcha,
+                        HttpSession session) {
+        NutMap re = new NutMap();
+        if (!Toolkit.checkCaptcha(_captcha, captcha)) {
+            return re.setv("ok", false).setv("msg", "验证码错误");
+        }
         User user = dao.fetch(User.class, Cnd.where("name", "=", name).and("password", "=", password));
         if (user == null) {
-            return false;
+            return re.setv("ok", false).setv("msg", "用户名或密码错误");
         } else {
             session.setAttribute("me", user.getId());
-            return true;
+            return re.setv("ok", true);
         }
     }
 
