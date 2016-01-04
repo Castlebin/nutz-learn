@@ -2,10 +2,7 @@ package com.heller.nutzbook.bean;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.nutz.dao.entity.annotation.Column;
-import org.nutz.dao.entity.annotation.Id;
-import org.nutz.dao.entity.annotation.Name;
-import org.nutz.dao.entity.annotation.Table;
+import org.nutz.dao.entity.annotation.*;
 
 @Getter
 @Setter
@@ -23,5 +20,9 @@ public class User extends BasePojo {
 
     @Column("salt")
     private String salt;
+
+    /** 配置一一映射, User类的id，UserProfile类的userId对应 */
+    @One(target = UserProfile.class, field = "id", key = "userId")
+    private UserProfile profile;
 
 }
