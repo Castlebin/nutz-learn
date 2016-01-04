@@ -2,10 +2,8 @@ package com.heller.nutzbook.module;
 
 import com.heller.nutzbook.bean.User;
 import org.nutz.dao.Cnd;
-import org.nutz.dao.Dao;
 import org.nutz.dao.QueryResult;
 import org.nutz.dao.pager.Pager;
-import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Strings;
 import org.nutz.lang.util.NutMap;
@@ -20,10 +18,7 @@ import java.util.Date;
 @At("user")
 @Ok("json:{locked:'password|salt', ignoreNull:true}") // 密码和salt也不可以发送到浏览器去
 @Fail("http:500")
-public class UserModule {
-
-    @Inject
-    private Dao dao;
+public class UserModule extends BaseModule {
 
     @At
     public int count() {

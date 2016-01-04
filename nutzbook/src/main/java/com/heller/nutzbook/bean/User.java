@@ -1,16 +1,16 @@
 package com.heller.nutzbook.bean;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.nutz.dao.entity.annotation.Column;
 import org.nutz.dao.entity.annotation.Id;
 import org.nutz.dao.entity.annotation.Name;
 import org.nutz.dao.entity.annotation.Table;
 
-import java.util.Date;
-
-@Data
+@Getter
+@Setter
 @Table("t_user")
-public class User {
+public class User extends BasePojo {
 
     @Id
     private int id;
@@ -23,11 +23,5 @@ public class User {
 
     @Column("salt")
     private String salt;
-
-    @Column("create_time")
-    private Date createTime;
-
-    @Column("update_time")
-    private Date updateTime;
 
 }
