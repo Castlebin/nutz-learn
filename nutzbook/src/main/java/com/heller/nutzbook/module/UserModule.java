@@ -37,4 +37,10 @@ public class UserModule {
         }
     }
 
+    @At
+    @Ok(">>:/")
+    public void logout(HttpSession session) {
+        session.invalidate();
+    }
+
 }
