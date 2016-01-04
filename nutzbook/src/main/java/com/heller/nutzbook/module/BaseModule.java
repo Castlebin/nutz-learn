@@ -13,7 +13,6 @@ public abstract class BaseModule {
     @Inject
     protected EmailService emailService;
 
-    // 将邮箱验证key临时保存在内存中，正式使用时，应该保存在数据库中
     protected byte[] emailKEY = R.sg(24).next().getBytes();
 
 }
