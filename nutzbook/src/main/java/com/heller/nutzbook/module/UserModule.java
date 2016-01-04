@@ -10,13 +10,15 @@ import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Strings;
 import org.nutz.lang.util.NutMap;
 import org.nutz.mvc.annotation.*;
+import org.nutz.mvc.filter.CheckSession;
 
 import javax.servlet.http.HttpSession;
 import java.util.Date;
 
+@Filters(@By(type = CheckSession.class, args = {"me", "/"})) // 如果session中没有me这个属性，就跳转到/
 @IocBean
 @At("user")
-@Ok("json")
+@Ok("json:{locked:'password|salt', ignoreNull:true}") // 密码和salt也不可以发送到浏览器去
 @Fail("http:500")
 public class UserModule {
 
@@ -28,6 +30,7 @@ public class UserModule {
         return dao.count(User.class);
     }
 
+    @Filters //为login方法设置为空的过滤器，否则无法登录（类上有一个CheckSession的过滤器）
     @At
     public Object login(@Param("username") String name, @Param("password") String password, HttpSession session) {
         User user = dao.fetch(User.class, Cnd.where("name", "=", name).and("password", "=", password));
