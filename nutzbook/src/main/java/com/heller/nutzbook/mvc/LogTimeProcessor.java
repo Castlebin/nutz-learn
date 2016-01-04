@@ -8,6 +8,7 @@ import org.nutz.mvc.impl.processor.AbstractProcessor;
 
 import javax.servlet.http.HttpServletRequest;
 
+// 自定义一个Processor，用来对每个请求计时
 public class LogTimeProcessor extends AbstractProcessor {
 
     private static final Log log = Logs.get();
