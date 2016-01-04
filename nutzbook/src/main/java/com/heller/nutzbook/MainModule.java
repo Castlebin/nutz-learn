@@ -11,7 +11,8 @@ import org.nutz.mvc.ioc.provider.ComboIocProvider;
 @IocBy(type = ComboIocProvider.class, args = {
         "*js", "ioc/",
         "*anno", "com.heller.nutzbook",
-        "*tx"
+        "*tx",
+        "*org.nutz.integration.quartz.QuartzIocLoader"
 })
 @Modules(scanPackage = true)
 public class MainModule {
