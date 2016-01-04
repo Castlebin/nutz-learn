@@ -7,8 +7,8 @@ var ioc = {
         },
         fields : {
             url : "jdbc:mysql://localhost:3306/nutzbook",
-            username : "root",
-            password : "root",
+            username : "nutz",
+            password : "nutz",
             testWhileIdle : true,
             validationQuery : "select 1",
             maxActive : 100
