@@ -3,14 +3,13 @@ package com.heller.nutzbook.module;
 import com.heller.nutzbook.bean.User;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Dao;
+import org.nutz.dao.QueryResult;
+import org.nutz.dao.pager.Pager;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Strings;
 import org.nutz.lang.util.NutMap;
-import org.nutz.mvc.annotation.At;
-import org.nutz.mvc.annotation.Fail;
-import org.nutz.mvc.annotation.Ok;
-import org.nutz.mvc.annotation.Param;
+import org.nutz.mvc.annotation.*;
 
 import javax.servlet.http.HttpSession;
 import java.util.Date;
@@ -67,6 +66,50 @@ public class UserModule {
 
         return re.setv("ok", true)
                 .setv("data", user);
+    }
+
+    @At
+    public Object update(@Param("..") User user) {
+        NutMap re = new NutMap();
+        String msg = checkUser(user, false);
+        if (msg != null) {
+            return re.setv("ok", false)
+                    .setv("msg", msg);
+        }
+        user.setName(null); // 不允许更新用户名
+        user.setCreateTime(null); // 也不允许更新创建时间
+        user.setUpdateTime(new Date());
+
+        dao.updateIgnoreNull(user); // ignoreNull，为null的字段均不去更新
+
+        return re.setv("ok", true);
+    }
+
+    @At
+    public Object delete(@Param("id") int id, @Attr("me") int me) {
+        if (me == id) {
+            return new NutMap().setv("ok", false)
+                    .setv("msg", "不能删除当前用户！");
+        }
+
+        dao.delete(User.class, id);
+
+        return new NutMap().setv("ok", true);
+    }
+
+    /**
+     * 查询，带分页：
+     * eg: http://127.0.0.1:8080/nutzbook/user/query?pageNumber=1&pageSize=2
+     */
+    @At
+    public Object query(@Param("name") String name, @Param("..") Pager pager) {
+        Cnd cnd = Strings.isBlank(name)? null : Cnd.where("name", "like", "%"+name+"%");
+        QueryResult qr = new QueryResult();
+        qr.setList(dao.query(User.class, cnd, pager));
+        pager.setRecordCount(dao.count(User.class, cnd));
+        qr.setPager(pager);  // 分页还不够智能啊。不过挺清晰的，这样也不错
+
+        return qr;
     }
 
     /**
