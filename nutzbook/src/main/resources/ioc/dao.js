@@ -17,7 +17,9 @@ var ioc = {
             password: {java: "$conf.get('db.password')"},
             testWhileIdle: true,
             validationQuery: {java: "$conf.get('db.validationQuery')"},
-            maxActive: {java: "$conf.get('db.maxActive')"}
+            maxActive: {java: "$conf.get('db.maxActive')"},
+            filters: "mergeStat",
+            connectionProperties: "druid.stat.slowSqlMills=2000"
         }
     },
     dao: {
