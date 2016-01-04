@@ -1,11 +1,14 @@
 package com.heller.nutzbook.module;
 
 import com.heller.nutzbook.bean.UserProfile;
+import com.heller.nutzbook.util.Toolkit;
 import org.nutz.dao.DaoException;
 import org.nutz.dao.FieldFilter;
 import org.nutz.dao.util.Daos;
 import org.nutz.img.Images;
 import org.nutz.ioc.loader.annotation.IocBean;
+import org.nutz.lang.Strings;
+import org.nutz.lang.util.NutMap;
 import org.nutz.log.Log;
 import org.nutz.log.Logs;
 import org.nutz.mvc.Mvcs;
@@ -133,6 +136,34 @@ public class UserProfileModule extends BaseModule {
     @Ok("jsp:jsp.user.profile")
     public UserProfile index(@Attr(scope=Scope.SESSION, value="me")int userId) {
         return get(userId);
+    }
+
+    @At("/active/mail")
+    @POST
+    public Object activeMail(@Attr(scope = Scope.SESSION, value = "me") int userId,
+                             HttpServletRequest req) {
+        NutMap re = new NutMap();
+
+        UserProfile profile = get(userId);
+        if (Strings.isBlank(profile.getEmail())) {
+            return re.setv("ok", false).setv("msg", "你还没有填邮箱啊!");
+        }
+        String token = String.format("%s,%s,%s", userId, profile.getEmail(), System.currentTimeMillis());
+        token = Toolkit._3DES_encode(emailKEY, token.getBytes());
+        String url = req.getRequestURL() + "?token=" + token;
+        String html = "<div>如果无法点击,请拷贝一下链接到浏览器中打开<p/>验证链接 %s</div>";
+        html = String.format(html, url);
+        try {
+            boolean ok = emailService.send(profile.getEmail(), "验证邮件 by Nutzbook", html);
+            if ( !ok ) {
+                return re.setv("ok", false).setv("msg", "发送失败");
+            }
+        } catch (Throwable e) {
+            log.error("发送邮件失败", e);
+            return re.setv("ok", false).setv("msg", "发送失败");
+        }
+
+        return re.setv("ok", true);
     }
 
 }
