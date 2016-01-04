@@ -7,7 +7,7 @@ import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.log.Log;
 import org.nutz.log.Logs;
 
-@IocBean
+@IocBean(name = "emailService")
 public class EmailServiceImpl implements EmailService {
 
     private static final Log log = Logs.get();

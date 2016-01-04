@@ -2,6 +2,7 @@ package com.heller.nutzbook.module;
 
 import com.heller.nutzbook.bean.UserProfile;
 import com.heller.nutzbook.util.Toolkit;
+import org.nutz.dao.Cnd;
 import org.nutz.dao.DaoException;
 import org.nutz.dao.FieldFilter;
 import org.nutz.dao.util.Daos;
@@ -19,8 +20,10 @@ import org.nutz.mvc.filter.CheckSession;
 import org.nutz.mvc.impl.AdaptorErrorContext;
 import org.nutz.mvc.upload.TempFile;
 import org.nutz.mvc.upload.UploadAdaptor;
+import org.nutz.dao.Chain;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
@@ -164,6 +167,41 @@ public class UserProfileModule extends BaseModule {
         }
 
         return re.setv("ok", true);
+    }
+
+    @Filters // 不需要先登录,很明显...
+    @At("/active/mail")
+    @GET
+    @Ok("raw") // 为了简单起见,这里直接显示验证结果就好了
+    public String activeMailCallback(@Param("token")String token, HttpSession session) {
+        if (Strings.isBlank(token)) {
+            return "请不要直接访问这个链接!!!";
+        }
+        if (token.length() < 10) {
+            return "非法token";
+        }
+        try {
+            token = Toolkit._3DES_decode(emailKEY, Toolkit.hexstr2bytearray(token));
+            if (token == null)
+                return "非法token";
+            String[] tmp = token.split(",", 3);
+            if (tmp.length != 3 || tmp[0].length() == 0 || tmp[1].length() == 0 || tmp[2].length() == 0)
+                return "非法token";
+            long time = Long.parseLong(tmp[2]);
+            if (System.currentTimeMillis() - time > 10*60*1000) {
+                return "该验证链接已经超时";
+            }
+            int userId = Integer.parseInt(tmp[0]);
+            Cnd cnd = Cnd.where("userId", "=", userId).and("email", "=", tmp[1]);
+            int re = dao.update(UserProfile.class, Chain.make("emailChecked", true), cnd);
+            if (re == 1) {
+                return "验证成功";
+            }
+            return "验证失败!!请重新验证!!";
+        } catch (Throwable e) {
+            log.debug("检查token时出错", e);
+            return "非法token";
+        }
     }
 
 }
