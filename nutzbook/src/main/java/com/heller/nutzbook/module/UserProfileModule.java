@@ -2,6 +2,8 @@ package com.heller.nutzbook.module;
 
 import com.heller.nutzbook.bean.UserProfile;
 import com.heller.nutzbook.util.Toolkit;
+import org.apache.shiro.authz.annotation.RequiresUser;
+import org.nutz.dao.Chain;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.DaoException;
 import org.nutz.dao.FieldFilter;
@@ -16,11 +18,9 @@ import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.Scope;
 import org.nutz.mvc.adaptor.JsonAdaptor;
 import org.nutz.mvc.annotation.*;
-import org.nutz.mvc.filter.CheckSession;
 import org.nutz.mvc.impl.AdaptorErrorContext;
 import org.nutz.mvc.upload.TempFile;
 import org.nutz.mvc.upload.UploadAdaptor;
-import org.nutz.dao.Chain;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -33,11 +33,11 @@ import java.util.Date;
 
 @IocBean
 @At("/user/profile")
-@Filters(@By(type = CheckSession.class, args = {"me", "/"})) // 检查当前Session是否带me这个属性
 public class UserProfileModule extends BaseModule {
 
     private static final Log log = Logs.get();
 
+    @RequiresUser
     @At
     public UserProfile get(@Attr(scope = Scope.SESSION, value = "me") int userId) {
         UserProfile profile = Daos.ext(dao, FieldFilter.locked(UserProfile.class, "avatar"))
@@ -57,6 +57,7 @@ public class UserProfileModule extends BaseModule {
         return profile;
     }
 
+    @RequiresUser
     @At
     @AdaptBy(type=JsonAdaptor.class)
     @Ok("void")
@@ -84,6 +85,7 @@ public class UserProfileModule extends BaseModule {
         Daos.ext(dao, FieldFilter.create(UserProfile.class, null, "avatar", true)).update(profile);
     }
 
+    @RequiresUser
     @AdaptBy(type=UploadAdaptor.class,
             args={"${app.root}/WEB-INF/tmp/user_avatar", "8192", "utf-8", "20000", "102400"})
     @POST
@@ -120,6 +122,7 @@ public class UserProfileModule extends BaseModule {
         }
     }
 
+    @RequiresUser
     @Ok("raw:jpg")
     @At("/avatar")
     @GET
@@ -134,6 +137,7 @@ public class UserProfileModule extends BaseModule {
         return profile.getAvatar();
     }
 
+    @RequiresUser
     @At("/")
     @GET
     @Ok("jsp:jsp.user.profile")
@@ -141,6 +145,7 @@ public class UserProfileModule extends BaseModule {
         return get(userId);
     }
 
+    @RequiresUser
     @At("/active/mail")
     @POST
     public Object activeMail(@Attr(scope = Scope.SESSION, value = "me") int userId,
@@ -169,7 +174,6 @@ public class UserProfileModule extends BaseModule {
         return re.setv("ok", true);
     }
 
-    @Filters // 不需要先登录,很明显...
     @At("/active/mail")
     @GET
     @Ok("raw") // 为了简单起见,这里直接显示验证结果就好了

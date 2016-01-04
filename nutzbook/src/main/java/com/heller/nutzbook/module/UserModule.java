@@ -3,7 +3,7 @@ package com.heller.nutzbook.module;
 import com.heller.nutzbook.bean.User;
 import com.heller.nutzbook.bean.UserProfile;
 import com.heller.nutzbook.service.UserService;
-import com.heller.nutzbook.util.Toolkit;
+import org.apache.shiro.authz.annotation.RequiresUser;
 import org.nutz.aop.interceptor.ioc.TransAop;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.QueryResult;
@@ -13,13 +13,8 @@ import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Strings;
 import org.nutz.lang.util.NutMap;
-import org.nutz.mvc.Scope;
 import org.nutz.mvc.annotation.*;
-import org.nutz.mvc.filter.CheckSession;
 
-import javax.servlet.http.HttpSession;
-
-@Filters(@By(type = CheckSession.class, args = {"me", "/"})) // 如果session中没有me这个属性，就跳转到/
 @IocBean
 @At("/user")
 @Ok("json:{locked:'password|salt', ignoreNull:true}") // 密码和salt也不可以发送到浏览器去
@@ -34,36 +29,11 @@ public class UserModule extends BaseModule {
         return dao.count(User.class);
     }
 
-    @Filters //为login方法设置为空的过滤器，否则无法登录（类上有一个CheckSession的过滤器）
-    @At
-    public Object login(@Param("username") String username,
-                        @Param("password") String password,
-                        @Param("captcha") String captcha,
-                        @Attr(scope=Scope.SESSION, value="nutz_captcha") String _captcha,
-                        HttpSession session) {
-        NutMap re = new NutMap();
-        if (!Toolkit.checkCaptcha(_captcha, captcha)) {
-            return re.setv("ok", false).setv("msg", "验证码错误");
-        }
-        int userId = userService.fetch(username, password);
-        if (userId < 0) {
-            return re.setv("ok", false).setv("msg", "用户名或密码错误");
-        } else {
-            session.setAttribute("me", userId);
-            return re.setv("ok", true);
-        }
-    }
-
-    @At
-    @Ok(">>:/")
-    public void logout(HttpSession session) {
-        session.invalidate();
-    }
-
     /**
      * 增加用户
      * eg: http://127.0.0.1:8080/nutzbook/user/add?name=wendal&password=123456
      */
+    @RequiresUser
     @At
     public Object add(@Param("..")User user) { // 两个点号是按对象属性一一设置
         NutMap re = new NutMap();
@@ -77,6 +47,7 @@ public class UserModule extends BaseModule {
                  .setv("data", user);
     }
 
+    @RequiresUser
     @At
     public Object update(@Param("id") int id,
                          @Param("password")String password,
@@ -93,6 +64,7 @@ public class UserModule extends BaseModule {
         return new NutMap().setv("ok", true);
     }
 
+    @RequiresUser
     @At
     @Aop(TransAop.READ_COMMITTED)
     public Object delete(@Param("id") int id,
@@ -113,6 +85,7 @@ public class UserModule extends BaseModule {
      * 查询，带分页：
      * eg: http://127.0.0.1:8080/nutzbook/user/query?pageNumber=1&pageSize=2
      */
+    @RequiresUser
     @At
     public Object query(@Param("name") String name,
                         @Param("..") Pager pager) {
@@ -127,11 +100,11 @@ public class UserModule extends BaseModule {
 
     @GET
     @At("/login") // /user/login
-    @Filters
     @Ok("jsp:jsp.user.login") // 访问这个/user/login路径的GET请求, 将会转发到 /WEB-INF/jsp/user/login.jsp
     public void loginPage() {
     }
 
+    @RequiresUser
     @At("/")
     @Ok("jsp:jsp.user.list") // 真实路径是 /WEB-INF/jsp/user/list.jsp
     public void index() {
