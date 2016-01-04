@@ -125,6 +125,13 @@ public class UserModule extends BaseModule {
         return qr;
     }
 
+    @GET
+    @At("/login") // /user/login
+    @Filters
+    @Ok("jsp:jsp.user.login") // 访问这个/user/login路径的GET请求, 将会转发到 /WEB-INF/jsp/user/login.jsp
+    public void loginPage() {
+    }
+
     @At("/")
     @Ok("jsp:jsp.user.list") // 真实路径是 /WEB-INF/jsp/user/list.jsp
     public void index() {
